@@ -1,0 +1,539 @@
+.header-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 40px;
+}
+
+.left-section {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+}
+
+.logo {
+    width: 210px;
+    height: 70px;
+}
+
+.nav-menu {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    gap: 30px;
+    list-style: none;
+}
+
+.nav-menu li {
+    display: inline-block;
+    padding: 8px 16px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background-color 0.2s ease, color 0.2s ease;
+    font-weight: 500;
+    font-size: 26px;
+}
+
+#btn-music:hover {
+    background-color: #d0e7ff;
+}
+
+#btn-music.active {
+    background-color: #90cfff;
+}
+
+#btn-sounds:hover {
+    background-color: #e0ffd0;
+}
+
+#btn-sounds.active {
+    background-color: #9fff90;
+}
+
+#btn-guides:hover {
+    background-color: #ffe0d0;
+}
+
+#btn-guides.active {
+    background-color: #ffb790;
+}
+
+.login-link {
+    text-decoration: none;
+    font-size: 26px;
+    font-weight: 500;
+    color: black;
+}
+
+.login-link:hover {
+    text-decoration: underline;
+}
+
+#map {
+    height: 90vh;
+    width: 100%;
+}
+
+.city-button {
+    background-color: #0b3cc1;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 13px;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    transition: background-color 0.3s ease, color 0.3s ease, transform 0.15s ease;
+}
+
+.city-button:hover {
+    transform: scale(1.05);
+}
+
+.city-button.music-mode {
+    background-color: #0b3cc1;
+    color: #ffffff;
+}
+
+.city-button.music-mode:hover {
+    background-color: #113593;
+}
+
+.city-button.sounds-mode {
+
+}
+
+.hidden {
+    display: none !important;
+}
+
+.city-button.sounds-mode:hover {
+    background-color: #257a25;
+}
+
+.city-button.guides-mode {
+    background-color: #d97326;
+    color: #ffffff;
+}
+
+.city-button.guides-mode:hover {
+    background-color: #b85e1f;
+}
+
+.city-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.spotify-window,
+.audio-window {
+    position: fixed;
+    top: 100px;
+    left: 100px;
+    width: 500px;
+    height: 600px;
+    background: #121212;
+    border-radius: 8px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.4);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    z-index: 1000;
+    color: #ffffff;
+    font-family: "Segoe UI", sans-serif;
+}
+
+.spotify-header,
+.audio-header {
+    height: 30px;
+    background: #1db954;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 10px;
+    cursor: grab;
+    font-weight: bold;
+    user-select: none;
+}
+
+.spotify-title,
+.audio-title-header {
+    font-size: 13px;
+    font-weight: bold;
+    color: #fff;
+}
+
+.spotify-close,
+.audio-close {
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 16px;
+    cursor: pointer;
+    transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.spotify-close:hover,
+.audio-close:hover {
+    color: #000;
+    background-color: #fff;
+    border-radius: 50%;
+}
+
+.spotify-resizer,
+.audio-resizer {
+    height: 8px;
+    background: transparent;
+    cursor: ns-resize;
+    transition: background 0.3s;
+}
+
+.spotify-resizer:hover,
+.audio-resizer:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.music-header {
+    background: #1db954;
+}
+
+.sounds-header,
+.audio-header {
+    background: #2d9e2d;
+}
+
+.guides-header {
+    background: #d97326;
+}
+
+.content-placeholder {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: #ffffff;
+    padding: 20px;
+    text-align: center;
+}
+
+.content-placeholder p {
+    margin: 10px 0;
+    font-size: 16px;
+}
+
+.content-placeholder p:first-child {
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.audio-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 14px;
+    height: calc(100% - 40px);
+    overflow-y: auto;
+}
+
+.audio-image {
+    width: 260px;
+    height: 260px;
+    object-fit: contain;
+    margin: 10px 0;
+}
+
+.audio-name {
+    font-size: 18px;
+    font-weight: bold;
+    margin: 8px 0;
+}
+
+.audio-description {
+    font-size: 14px;
+    color: #ccc;
+    line-height: 1.4;
+    margin-bottom: 16px;
+    max-width: 90%;
+    text-align: center;
+}
+
+.audio-controls {
+    width: 90%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: center;
+}
+
+.audio-play-btn {
+    background: #4caf50;
+    border: none;
+    border-radius: 50%;
+    width: 42px;
+    height: 42px;
+    font-size: 18px;
+    color: white;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.audio-play-btn:hover {
+    background: #43a047;
+}
+
+.audio-progress-container {
+    flex: 1;
+    height: 6px;
+    background: #444;
+    border-radius: 4px;
+    cursor: pointer;
+    position: relative;
+}
+
+.audio-progress-bar {
+    height: 100%;
+    width: 0;
+    background: #4caf50;
+    border-radius: 4px;
+    transition: width 0.1s linear;
+}
+
+.audio-time {
+    font-size: 12px;
+    color: #bbb;
+}
+
+.sound-button {
+    background-color: #2d9e2d;
+    color: #ffffff;
+    border: none;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 13px;
+    cursor: pointer;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+    transition: background-color 0.3s ease, color 0.3s ease, transform 0.15s ease;
+}
+
+.sound-button:hover {
+    transform: scale(1.05);
+}
+
+.auth-container {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 4000;
+}
+
+.auth-container.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* Напівпрозорий фон */
+.auth-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(3px);
+    z-index: 1;
+}
+
+/* Основне вікно авторизації */
+.auth-box {
+    z-index: 2;
+    background: #fbf9f8;
+    border-radius: 14px;
+    width: 380px;
+    padding: 26px 28px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+    transform: translateY(0);
+    transition: all 0.25s;
+}
+
+/* Вкладки (логін / реєстрація) */
+.auth-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 18px;
+}
+
+.tab {
+    background: transparent;
+    border: none;
+    padding: 8px 14px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-weight: 600;
+    color: #444;
+    transition: background 0.2s, box-shadow 0.2s;
+}
+
+.tab.active {
+    background: #e9e5e4;
+    color: #111;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+}
+
+/* Поля вводу */
+.field {
+    display: block;
+    margin-bottom: 12px;
+}
+
+.field input {
+    width: 93%;
+    padding: 12px 14px;
+    font-size: 15px;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.field input:focus {
+    border-color: #3b79f8;
+}
+
+/* Основна кнопка */
+.primary-btn {
+    width: 100%;
+    padding: 12px;
+    margin-top: 6px;
+    border: none;
+    border-radius: 12px;
+    background: linear-gradient(90deg, #6aa6ff, #3b79f8);
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 6px 18px rgba(59, 121, 248, 0.18);
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.primary-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(59, 121, 248, 0.25);
+}
+
+/* Розділювач */
+.or-sep {
+    text-align: center;
+    margin: 12px 0;
+    color: #888;
+    font-size: 14px;
+}
+
+/* Соціальні кнопки */
+.social-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.social-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 48%;
+    padding: 10px;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid #e6e6e6;
+    border-radius: 10px;
+    color: #111;
+    transition: box-shadow 0.2s, transform 0.2s;
+}
+
+.social-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+}
+
+.social-btn.google {
+    background: #fff;
+}
+
+.social-btn.fb {
+    background: #e9f0ff;
+    color: #1a4fbf;
+}
+
+/* ============================
+   ПРОФІЛЬ — випадаюче меню
+   ============================ */
+
+.profile-dropdown {
+    position: absolute;
+    top: 64px;
+    right: 40px;
+    z-index: 4500;
+}
+
+.profile-dropdown.hidden {
+    display: none;
+}
+
+.profile-card {
+    width: 260px;
+    background: #fff;
+    border-radius: 12px;
+    padding: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+/* Верхня частина профілю */
+.profile-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+/* Кнопки дій профілю */
+.link-btn,
+.danger-btn {
+    width: 100%;
+    padding: 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: center;
+    font-weight: 600;
+    transition: background 0.2s, box-shadow 0.2s;
+}
+
+/* Звичайна кнопка */
+.link-btn {
+    background: #f3f7ff;
+    border: 1px solid #e6eeff;
+}
+
+.link-btn:hover {
+    background: #e8f0ff;
+}
+
+/* Небезпечна дія (вихід тощо) */
+.danger-btn {
+    background: #fff5f5;
+    border: 1px solid #ffd7d7;
+    color: #b90000;
+}
+
+.danger-btn:hover {
+    background: #ffeaea;
+}
