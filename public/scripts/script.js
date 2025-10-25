@@ -1,6 +1,5 @@
 const btnSounds = document.getElementById("btn-sounds");
 const btnMusic = document.getElementById("btn-music");
-const btnGuides = document.getElementById("btn-guides");
 const loginLink = document.querySelector('.login-link')
 const authEmbed = document.getElementById('auth-embed')
 const profileDropdown = document.getElementById('profile-dropdown')
@@ -21,23 +20,31 @@ function openAuth(tab = 'login') {
     if (tab === 'register') showRegister()
     else showLogin()
 }
+
 function closeAuth() {
     authEmbed.classList.add('hidden')
     authEmbed.setAttribute('aria-hidden', 'true')
     document.body.classList.remove('modal-open')
 }
+
 function showLogin() {
     tabLogin.classList.add('active')
     tabRegister.classList.remove('active')
+    loginForm.classList.add('active')
     loginForm.classList.remove('hidden')
+    registerForm.classList.remove('active')
     registerForm.classList.add('hidden')
 }
+
 function showRegister() {
     tabRegister.classList.add('active')
     tabLogin.classList.remove('active')
+    registerForm.classList.add('active')
     registerForm.classList.remove('hidden')
+    loginForm.classList.remove('active')
     loginForm.classList.add('hidden')
 }
+
 function toggleProfileDropdown() {
     profileDropdown.classList.toggle('hidden')
 }
@@ -52,8 +59,6 @@ loginLink.addEventListener('click', async (e) => {
             openAuth('login')
         }
     } catch (err) {
-        // If the request fails (e.g., when running locally without a backend),
-        // gracefully open the authentication dialog instead of doing nothing.
         openAuth('login')
     }
 })
@@ -131,383 +136,222 @@ async function refreshProfile() {
 
 refreshProfile()
 
-
+//    =========================================================================================================
 let currentMode = "music";
+let geojsonLayer;
+let sounds = {};
+let allCategories = [];
+const playlists = [
+    { name_en: "Lviv Oblast", name_uk: "Львівська область", playlist: "https://open.spotify.com/embed/playlist/37i9dQZF1DX7gIoKXt0gmx?utm_source=generator" },
+    { name_en: "Volyn Oblast", name_uk: "Волинська область", playlist: "https://open.spotify.com/embed/playlist/61OTpxcxvKcncbWYfxJG0h?utm_source=generator" },
+    { name_en: "Zakarpattia Oblast", name_uk: "Закарпатська область", playlist: "https://open.spotify.com/embed/playlist/5oPgfiISFbOIleLgeKrANW?utm_source=generator" },
+    { name_en: "Ivano-Frankivsk Oblast", name_uk: "Івано-Франківська область", playlist: "https://open.spotify.com/embed/playlist/4I20xi99T7YoYsApYZLzEx?utm_source=generator" },
+    { name_en: "Ternopil Oblast", name_uk: "Тернопільська область", playlist: "https://open.spotify.com/embed/playlist/5Mu8JspiNnrtZKBPBYHhkB?utm_source=generator" },
+    { name_en: "Kharkiv Oblast", name_uk: "Харківська область", playlist: "https://open.spotify.com/embed/playlist/2pOx55wWxI1vsLitqtpp60?utm_source=generator" },
+    { name_en: "Luhansk Oblast", name_uk: "Луганська область", playlist: "https://open.spotify.com/embed/playlist/1pBcu7pquxneAFxcsmb671?utm_source=generator" },
+    { name_en: "Donetsk Oblast", name_uk: "Донецька область", playlist: "https://open.spotify.com/embed/playlist/7sl24S6mRCO09MTXUmu2k3?utm_source=generator" },
+    { name_en: "Zaporizhzhia Oblast", name_uk: "Запорізька область", playlist: "https://open.spotify.com/embed/playlist/12ncb1YwgH2QGDr4id09lL?utm_source=generator" },
+    { name_en: "Crimea", name_uk: "Крим", playlist: "https://open.spotify.com/embed/playlist/2Fy4rQtZt3M67paPLnBGDy?utm_source=generator" },
+    { name_en: "Kyiv Oblast", name_uk: "Київська область", playlist: "https://open.spotify.com/embed/playlist/5n8q1jMUZvukluXGrK59ud?utm_source=generator" },
+    { name_en: "Zhytomyr Oblast", name_uk: "Житомирська область", playlist: "https://open.spotify.com/embed/playlist/6wY5dYvNyaZ6KDjYFxGjnA?utm_source=generator" },
+    { name_en: "Chernivtsi Oblast", name_uk: "Чернівецька область", playlist: "https://open.spotify.com/embed/playlist/31ypb5JEcrvGlGFXtoyyAy?utm_source=generator" },
+    { name_en: "Khmelnytskyi Oblast", name_uk: "Хмельницька область", playlist: "https://open.spotify.com/embed/playlist/05j94JqODbqnK2bnhZmfB5?utm_source=generator" },
+    { name_en: "Rivne Oblast", name_uk: "Рівненська область", playlist: "https://open.spotify.com/embed/playlist/0Bht3kby2V9Q8BbDKe1kkY?utm_source=generator" },
+    { name_en: "Kherson Oblast", name_uk: "Херсонська область", playlist: "https://open.spotify.com/embed/playlist/2ByILCBJFvztz6715TMT4E?utm_source=generator" },
+    { name_en: "Dnipropetrovsk Oblast", name_uk: "Дніпропетровська область", playlist: "https://open.spotify.com/embed/playlist/6emNP4N4ikf3cfDhS8Q4hf?utm_source=generator" },
+    { name_en: "Kirovohrad Oblast", name_uk: "Кіровоградська область", playlist: "https://open.spotify.com/embed/playlist/6hzjgiEvJjXi2Hnr3CocEm?utm_source=generator" },
+    { name_en: "Odesa Oblast", name_uk: "Одеська область", playlist: "https://open.spotify.com/embed/playlist/2pVF5RrQw1DVwGIgPcMrXD?utm_source=generator" },
+    { name_en: "Mykolaiv Oblast", name_uk: "Миколаївська область", playlist: "https://open.spotify.com/embed/playlist/1FW6Fgxn3DXUOGfIIs834v?utm_source=generator" },
+    { name_en: "Chernihiv Oblast", name_uk: "Чернігівська область", playlist: "https://open.spotify.com/embed/playlist/63MRfNIjbDorHgfyPUqntF?utm_source=generator" },
+    { name_en: "Sumy Oblast", name_uk: "Сумська область", playlist: "https://open.spotify.com/embed/playlist/1754eV67gtIpKfmaubVDLj?utm_source=generator" },
+    { name_en: "Poltava Oblast", name_uk: "Полтавська область", playlist: "https://open.spotify.com/embed/playlist/1m1P8XfkrnLtuJzTFfhwM4?utm_source=generator" },
+    { name_en: "Cherkasy Oblast", name_uk: "Черкаська область", playlist: "https://open.spotify.com/embed/playlist/50ZfCmAEXHG55xGOiSnxyp?utm_source=generator" },
+    { name_en: "Vinnytsia Oblast", name_uk: "Вінницька область", playlist: "https://open.spotify.com/embed/playlist/4TPRVHImP6rdPbX8rZU3ES?utm_source=generator" }
+];
 
-const map = L.map('map', {
-    center: [49, 31],
-    zoom: 6,
-    zoomControl: true,
-});
+btnSounds.addEventListener("click", () => setActive(btnSounds, "sounds"));
+btnMusic.addEventListener("click", () => setActive(btnMusic, "music"));
+setActive(btnMusic, "music");
+
+const map = L.map('map', { center: [48.5, 31.2], zoom: 6, zoomControl: true });
 
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; OpenStreetMap contributors'
 }).addTo(map);
 
-const cities = [
-    { name: "Вінниця", coords: [49.2331, 28.4682] },
-    { name: "Луцьк", coords: [50.7472, 25.3254] },
-    { name: "Дніпро", coords: [48.4670, 35.0400] },
-    { name: "Донецьк", coords: [48.0159, 37.8029] },
-    { name: "Житомир", coords: [50.2547, 28.6587] },
-    { name: "Ужгород", coords: [48.6208, 22.2879] },
-    { name: "Запоріжжя", coords: [47.8388, 35.1396] },
-    { name: "Івано-Франківськ", coords: [48.9226, 24.7111] },
-    { name: "Київ", coords: [50.4501, 30.5234] },
-    { name: "Кропивницький", coords: [48.5079, 32.2623] },
-    { name: "Луганськ", coords: [48.5740, 39.3078] },
-    { name: "Львів", coords: [49.8397, 24.0297] },
-    { name: "Миколаїв", coords: [46.9750, 31.9946] },
-    { name: "Одеса", coords: [46.4825, 30.7233] },
-    { name: "Полтава", coords: [49.5883, 34.5514] },
-    { name: "Рівне", coords: [50.6199, 26.2516] },
-    { name: "Суми", coords: [50.9077, 34.7981] },
-    { name: "Тернопіль", coords: [49.5535, 25.5948] },
-    { name: "Харків", coords: [49.9935, 36.2304] },
-    { name: "Херсон", coords: [46.6354, 32.6169] },
-    { name: "Хмельницький", coords: [49.4210, 26.9871] },
-    { name: "Черкаси", coords: [49.4444, 32.0598] },
-    { name: "Чернівці", coords: [48.2915, 25.9403] },
-    { name: "Чернігів", coords: [51.5055, 31.2849] },
-    { name: "Сімферополь", coords: [44.95829, 34.11014] }
-];
+fetch('data/Ukraine.geojson')
+    .then(res => res.json())
+    .then(data => {
+        geojsonLayer = L.geoJSON(data, {
+            style: feature => getRegionStyle(feature),
+            onEachFeature: (feature, layer) => {
+                const regionName = feature.properties.shapeName;
+                const playlistData = playlists.find(p =>
+                    p.name_uk === regionName || p.name_en === regionName
+                );
 
-const playlists = {
-    "Львів": "https://open.spotify.com/embed/playlist/37i9dQZF1DX7gIoKXt0gmx?utm_source=generator",
-    "Луцьк": "https://open.spotify.com/embed/playlist/61OTpxcxvKcncbWYfxJG0h?utm_source=generator",
-    "Ужгород": "https://open.spotify.com/embed/playlist/5oPgfiISFbOIleLgeKrANW?utm_source=generator",
-    "Івано-Франківськ": "https://open.spotify.com/embed/playlist/4I20xi99T7YoYsApYZLzEx?utm_source=generator",
-    "Тернопіль": "https://open.spotify.com/embed/playlist/5Mu8JspiNnrtZKBPBYHhkB?utm_source=generator",
-    "Харків": "https://open.spotify.com/embed/playlist/2pOx55wWxI1vsLitqtpp60?utm_source=generator",
-    "Луганськ": "https://open.spotify.com/embed/playlist/1pBcu7pquxneAFxcsmb671?utm_source=generator",
-    "Донецьк": "https://open.spotify.com/embed/playlist/7sl24S6mRCO09MTXUmu2k3?utm_source=generator",
-    "Запоріжжя": "https://open.spotify.com/embed/playlist/12ncb1YwgH2QGDr4id09lL?utm_source=generator",
-    "Сімферополь": "https://open.spotify.com/embed/playlist/2Fy4rQtZt3M67paPLnBGDy?utm_source=generator",
-    "Київ": "https://open.spotify.com/embed/playlist/5n8q1jMUZvukluXGrK59ud?utm_source=generator",
-    "Житомир": "https://open.spotify.com/embed/playlist/6wY5dYvNyaZ6KDjYFxGjnA?utm_source=generator",
-    "Чернівці": "https://open.spotify.com/embed/playlist/31ypb5JEcrvGlGFXtoyyAy?utm_source=generator",
-    "Хмельницький": "https://open.spotify.com/embed/playlist/05j94JqODbqnK2bnhZmfB5?utm_source=generator",
-    "Рівне": "https://open.spotify.com/embed/playlist/0Bht3kby2V9Q8BbDKe1kkY?utm_source=generator",
-    "Херсон": "https://open.spotify.com/embed/playlist/2ByILCBJFvztz6715TMT4E?utm_source=generator",
-    "Дніпро": "https://open.spotify.com/embed/playlist/6emNP4N4ikf3cfDhS8Q4hf?utm_source=generator",
-    "Кропивницький": "https://open.spotify.com/embed/playlist/6hzjgiEvJjXi2Hnr3CocEm?utm_source=generator",
-    "Одеса": "https://open.spotify.com/embed/playlist/2pVF5RrQw1DVwGIgPcMrXD?utm_source=generator",
-    "Миколаїв": "https://open.spotify.com/embed/playlist/1FW6Fgxn3DXUOGfIIs834v?utm_source=generator",
-    "Чернігів": "https://open.spotify.com/embed/playlist/63MRfNIjbDorHgfyPUqntF?utm_source=generator",
-    "Суми": "https://open.spotify.com/embed/playlist/1754eV67gtIpKfmaubVDLj?utm_source=generator",
-    "Полтава" : "https://open.spotify.com/embed/playlist/1m1P8XfkrnLtuJzTFfhwM4?utm_source=generator",
-    "Черкаси": "https://open.spotify.com/embed/playlist/50ZfCmAEXHG55xGOiSnxyp?utm_source=generator",
-    "Вінниця": "https://open.spotify.com/embed/playlist/4TPRVHImP6rdPbX8rZU3ES?utm_source=generator"
-};
-
-const soundPlaces = [
-    { name: "Сіра ворона", coords: [50.43854648591285, 30.52373061026226] },
-    { name: "Андріївський узвіз", coords: [50.45988883373832, 30.516182711986733]},
-    { name: "Труханів острів", coords: [50.46406959471843, 30.545128793981252]},
-    { name: "Вересень на Золотих воротах", coords: [50.44910872414411, 30.5141719837257]},
-    { name: "Контрактова площа", coords: [50.46616715421915, 30.515035299505687]},
-    { name: "Очеретянка велика", coords: [50.37942906898041, 30.519016197770426]},
-    { name: "Вівчарик жовтобровий", coords: [50.38649422342252, 30.512650495483577]},
-    { name: "Гімн Київського політехнічного інституту", coords: [50.44895885739085, 30.45693408130194]},
-    { name: "Дзвони Софії Київської", coords: [50.45298414570137, 30.51434297150585]},
-    { name: "Гімн \"Динамо\" Київ", coords: [50.45091416606141, 30.535384588696104]},
-    { name: "Гімн Києво-Могилянської академії", coords: [50.4677846977162, 30.524459234723384]},
-    { name: "Уривок із пʼєси \"Кайдашева сімʼя\"", coords: [50.4459628853084, 30.528449302189287]},
-    { name: "Станція метро Академмістечко", coords: [50.46508098969801, 30.355085368395226]},
-    { name: "Київ-Пасажирський", coords: [50.44059469798459, 30.489414412568255]},
-    { name: "Київська кільцева електричка", coords: [50.44204957539558, 30.48943202234873]},
-    { name: "Київський травмай", coords: [50.44679756128841, 30.490452644243383]},
-    { name: "Пісні на Київському вокзалі", coords: [50.44172244278844, 30.48771530190787]},
-    { name: "Київські Тролейбуси", coords: [50.44269284960104, 30.44252657511417]},
-    //{ name: "", coords: []},
-
-];
-
-const sounds = {
-    "Сіра ворона": {
-        title: "Сіра ворона",
-        description: "Вони надзвичайно розумні, соціальні, здатні використовувати знаряддя праці, розпізнавати людські обличчя та адаптуватися до міського життя. Її часто можна зустріти в містах та лісах, де вона відіграє важливу роль в екосистемі. Люблять розважатися, катаючись на снігу з дахів або граючись з іншими тваринами, наприклад собаками. Навіть після смерті одного з пари, інші ворони можуть збиратися біля загиблого птаха і видавати жалобні крики, що вказує на певний рівень емоційного звʼязку. Середня тривалість життя — 35–50 років.",
-        image: "images/photos/sira-vorona.jpg",
-        audio: "sounds/modeSounds/sira-vorona.mp3",
-        city: "Київ"
-    },
-    "Андріївський узвіз": {
-        title: "Андріївський узвіз",
-        description: "Історична вулиця-музей у Києві, відома як «київський Монмартр», яка зʼєднує Верхнє місто з Подолом від Володимирської вулиці до Контрактової площі. Вулиця забудована переважно в XIX-XX століттях. Тут розташовані такі відомі будівлі, як Андріївська церква, Замок Річарда, Будинок-музей Михайла Булгакова (Будинок Турбіних) та Будинок-музей Івана Кавалерідзе. Тут встановлені памʼятник героям пʼєси «За двома зайцями» Проні Прокопівні та Свириду Голохвастову та памʼятник Івану Кавалерідзе (у парку скульптур).",
-        image: "images/photos/andriivskiy-uzviz.jpg",
-        audio: "sounds/modeSounds/andriivskiy-uzviz.mp3",
-        city: "Київ"
-    },
-    "Труханів острів": {
-        title: "Труханів острів",
-        description: "Найбільший та один з найдавніших островів Києва на Дніпрі, що слугує популярною рекреаційною зоною. Зʼєднаний з правобережжям пішохідним мостом, острів пропонує безліч розваг: пляжі (зокрема Центральний), спортивні майданчики, пункти прокату, ресторани та зелені зони з унікальною рослинністю. Історично на острові існувало селище Водників, яке було знищене під час Другої світової війни, після чого територію облаштували для відпочинку.",
-        image: "images/photos/truhaniv-ostriv.jpg",
-        audio: "sounds/modeSounds/truhaniv-ostriv.mp3",
-        city: "Київ"
-    },
-    "Вересень на Золотих воротах": {
-        title: "Вересень на Золотих воротах",
-        description: "Головна брама стародавнього Києва, памʼятка оборонної архітектури ХІ століття. Вона була побудована за часів Ярослава Мудрого як парадний вʼїзд до міста, над якою височіла надбрамна церква Благовіщення. Сучасний вигляд памʼятка отримала після реставрації, коли над залишками старовинних стін звели захисний павільйон, всередині якого розташований музей. Золоті ворота служили головним парадним вʼїздом до Києва, куди прибували посли, купці та інші знатні особи. Архітектура Золотих воріт стала взірцем для інших споруд, зокрема для Троїцької надбрамної церкви Києво-Печерської лаври.",
-        image: "images/photos/veresen-na-zolotuh-vorotah.jpg",
-        audio: "sounds/modeSounds/veresen-na-zolotuh-vorotah.mp3",
-        city: "Київ"
-    },
-    "Контрактова площа": {
-        title: "Контрактова площа",
-        description: "Історичне серце Подолу, одна з найдавніших площ Києва, що існує з часів Київської Русі. Вона відома як торговий центр минулих століть, центр міжнародних «Контрактових ярмарків» наприкінці XVIII — початку ХІХ століття. У XVI столітті була відома як «Ринкова» через купців, які тримали тут комори. Після великої пожежі, що охопила весь Поділ, площа була відбудована за новим планом. \n" + "Зараз це місце значної подій, де розташовано багато архітектурних памʼяток, таких як Гостиний двір, церква Різдва Христового та Києво-Могилянська академія.",
-        image: "images/photos/kontraktova-ploscha.jpg",
-        audio: "sounds/modeSounds/kontraktova-ploscha.mp3",
-        city: "Київ"
-    },
-    "Очеретянка велика": {
-        title: "Очеретянка велика",
-        description: "Найбільший птах з родини очеретянкових, розміром приблизно зі шпака, з бурим верхом тіла та білуватим низом, над оком має нечітку світлу «брову». Окрім комах, очеретянка може полювати на дрібних рибок (мальків) та пуголовків, спритно вихоплюючи їх з води. Самець може мати до трьох партнерок одночасно, приваблюючи їх своїм співом. Він допомагає вигодовувати пташенят першої самки, а інші самки справляються самі. Пташенята зʼявляються через 2 тижні. Через 11-12 днів вони вже не вміщаються в гнізді і сидять на його краю. Приблизно через 3 тижні після народження вони залишають гніздо.",
-        image: "images/photos/ocheretyanka-veluka.jpg",
-        audio: "sounds/modeSounds/ocheretyanka-veluka.mp3",
-        city: "Київ"
-    },
-    "Вівчарик жовтобровий": {
-        title: "Вівчарик жовтобровий",
-        description: "Невелика пташка довжиною близько 12 см і вагою 10-11 г, яка має зеленкувато-оливкове забарвлення зверху, широку жовту \"брову\" над оком і жовті горло, воло та груди. Пташка гніздиться в листяних і мішаних лісах, а на зиму відлітає до Африки. Вона відома своєю унікальною піснею, що складається з швидких свистячих складів та мелодійної трелі, а також тим, що будує кулясті гнізда на землі в густій траві.",
-        image: "images/photos/vivcharuk-zhovtobrovuy.jpg",
-        audio: "sounds/modeSounds/vivcharuk-zhovtobrovuy.mp3",
-        city: "Київ"
-    },
-    "Гімн Київського політехнічного інституту": {
-        title: "Гімн Київського політехнічного інституту",
-        description: "Найбільший навчально-науковий центр України, заснований у 1898 році як Київський політехнічний інститут. Здійснює підготовку бакалаврів, магістрів, докторів філософії (PhD) та докторів наук. Включає 14 факультетів, 10 навчально-наукових інститутів, науково-дослідні інститути та наукові центри. \n" + "Цікаві факти: на території університету є найстаріше дерево Києва — райська яблуня, яка має статус найстаршого дерева столиці, а парк КПІ формувався завдяки роботам першого опікуна парку, вченого-садівника Е. І. Блекте.",
-        image: "images/photos/gimn-kpi.jpg",
-        audio: "sounds/modeSounds/gimn-kpi.mp3",
-        city: "Київ"
-    },
-    "Дзвони Софії Київської": {
-        title: "Дзвони Софії Київської",
-        description: "Унікальний історичний та архітектурний комплекс XI—XVIII століть, що поєднує візантійський стиль з українським бароко, який є одним із найдавніших храмів Києва і внесений до списку Всесвітньої спадщини ЮНЕСКО. Слово \"Софія\" походить з грецької мови і означає \"мудрість\". Назва собору, на думку творців, мала утверджувати християнство на Русі. Собор відомий своїми вражаючими мозаїками та фресками, зокрема мозаїкою \"Оранта\", та унікальним некрополем з саркофагами видатних князів, таких як Ярослав Мудрий та Володимир Мономах.",
-        image: "images/photos/sofia-bells.jpg",
-        audio: "sounds/modeSounds/sofia-bells.mp3",
-        city: "Київ"
-    },
-    "Гімн \"Динамо\" Київ": {
-        title: "Гімн \"Динамо\" Київ",
-        description: "Стадіон «Динамо» імені Валерія Лобановського – це домашня арена ФК «Динамо» (Київ), розташована в центрі міста поблизу Майдану Незалежності. Він вміщує 16 873 глядачі та є памʼяткою архітектури місцевого значення. Цікаві факти про стадіон включають його будівництво на місці теплиць, наявність памʼятника Валерію Лобановському, а також той факт, що до 2001 року тут функціонував відкритий басейн. На території встановлено памʼятник чотирьом футболістам київського «Динамо», які загинули під час Другої світової війни.",
-        image: "images/photos/gimn-dynamo.jpg",
-        audio: "sounds/modeSounds/gimn-dynamo.mp3",
-        city: "Київ"
-    },
-    "Гімн Києво-Могилянської академії": {
-        title: "Гімн Києво-Могилянської академії",
-        description: "Один з найстаріших українських вишів, заснований у 1632 році шляхом обʼєднання Київської братської та Лаврської шкіл. За час свого існування вона була провідним освітнім та культурним центром, надаючи освіту у багатьох дисциплінах і готуючи видатних діячів. Навчання велося латиною, а програма була надзвичайно широкою і включала, крім богословʼя та філософії, багато інших дисциплін, таких як математика, музика, медицина та іноземні мови. Була закрита у 1817 році. Після століття існування в будівлях (за часів СРСР) військово-морського училища, у 1991 році діяльність академії було відновлено як Національного університету «Києво-Могилянська академія». Перші студенти відродженої «Могилянки» почали навчання 24 серпня 1992 року.",
-        image: "images/photos/gimn-mogulyanka.jpg",
-        audio: "sounds/modeSounds/gimn-mogulyanka.mp3",
-        city: "Київ"
-    },
-    "Уривок із пʼєси \"Кайдашева сімʼя\"": {
-        title: "Уривок із пʼєси \"Кайдашева сімʼя\"",
-        description: "Провідний театр України, заснований у 1920 році, який працює у Києві в історичній будівлі, зведеній у 1898 році для театру «Соловцов». Під театром збереглося джерело, яке колись було частиною ставу в садибі професора Мерінга. Будівля театру розташована на місці ставу, який належав садибі професора Федора Мерінга. Взимку його використовували як ковзанку, а нащадки професора продали землю під забудову. Вода з нього вважається цілющою і приносить удачу, а у важкі часи війни вона рятувала життя. За часів режисерства Богдана Ступки театр активно гастролював за кордоном, зокрема в Німеччині, Австрії, Греції, Італії та Польщі. Статус національного театру він отримав у 1994 році.",
-        image: "images/photos/teatr-kaydash.jpg",
-        audio: "sounds/modeSounds/teatr-kaydash.mp3",
-        city: "Київ"
-    },
-    "Станція метро Академмістечко": {
-        title: "Станція метро Академмістечко",
-        description: "Західна кінцева станція Червоної лінії Київського метрополітену. Вона відкрилася у 2003 році та названа на честь наукових та освітніх установ, що знаходяться неподалік.",
-        image: "images/photos/akadem.jpg",
-        audio: "sounds/modeSounds/akadem.mp3",
-        city: "Київ"
-    },
-    "Київ-Пасажирський": {
-        title: "Київ-Пасажирський",
-        description: "Центральний залізничний вокзал Києва був збудований у 1868 р., після чого неодноразово був реставрований, останнє масштабне оновлення будівлі вокзалу здійснилося у 2001 р., тоді і було збудовано Південний вокзал як розвантаження Центрального. Будинок київського залізничного вокзалу має дуже велику історичну цінність для країни. Воно було реконструйовано за проектом архітектора Олександра Вербицького та виконано у стилі необарокко та конструктивізму.",
-        image: "images/photos/vokzal-potyag.jpg",
-        audio: "sounds/modeSounds/vokzal-potyag.mp3",
-        city: "Київ"
-    },
-    "Київська кільцева електричка": {
-        title: "Київська кільцева електричка",
-        description: "Рух відкрито 2 вересня 2009. Проєкт «Міська електричка» був реалізований з метою організації рівномірного розподілу пасажиропотоків та зменшення навантаження на інший громадський транспорт столиці, а також для забезпечення прямого звʼязку між лівобережною та правобережною частинами міста Києва.",
-        image: "images/photos/potyag.jpg",
-        audio: "sounds/modeSounds/potyag.mp3",
-        city: "Київ"
-    },
-    "Київський травмай": {
-        title: "Київський травмай",
-        description: "Система електричного трамвая міста Києва, відкрита 1 червня 1892 року, перша електрична трамвайна мережа на території колишньої Російської імперії, перша на території сучасної України, третя в Східній Європі (після Будапешта (1888) і Праги (1891)), шістнадцята в Європі. Також саме в Києві 30 грудня 1978 стала до ладу перша в тодішньому Радянському Союзі лінія швидкісного трамвая.",
-        image: "images/photos/tram.jpg",
-        audio: "sounds/modeSounds/tram.mp3",
-        city: "Київ"
-    },
-    "Пісні на Київському вокзалі": {
-        title: "Пісні на Київському вокзалі",
-        description: "На Київському вокзалі часто звучать патріотичні пісні, зокрема, оркестр виконував \"Воїни світла\" для військових. Також на вокзалі можна почути \"Як тебе не любити, Києве мій\", яка є офіційним гімном міста з листопада 2014 року.",
-        image: "images/photos/vokzal.jpg",
-        audio: "sounds/modeSounds/song-vokzal.mp3",
-        city: "Київ"
-    },
-    "Київські Тролейбуси": {
-        title: "Київські Тролейбуси",
-        description: "Найбільша в Україні та одна з найбільших у світі, відкрита 5 листопада 1935 року. Вона експлуатує велику кількість машин і має найбільшу довжину ліній у країні. Крім пасажирських, у Києві також виробляли вантажні тролейбуси (КТГ), які використовувалися в багатьох містах пострадянського простору.",
-        image: "images/photos/trolleybus.jpg",
-        audio: "sounds/modeSounds/trolleybus.mp3",
-        city: "Київ"
-    },
-};
-
-const cityMarkers = [];
-const soundMarkers = [];
-
-cities.forEach(city => {
-    const button = L.divIcon({
-        className: 'city-icon',
-        html: `<button class="city-button" data-city="${city.name}">${city.name}</button>`,
-        iconSize: [80, 30],
-        iconAnchor: [40, 15]
-    });
-    const marker = L.marker(city.coords, { icon: button }).addTo(map);
-    cityMarkers.push({ marker, city: city.name });
-    marker.on('click', () => handleCityClick(city.name));
-});
-
-soundPlaces.forEach(place => {
-    const icon = L.divIcon({
-        className: 'sound-icon',
-        html: `<img src="images/marker-sound.png" class="sound-marker" data-sound="${place.name}" style="width:40px; height:40px; cursor:pointer;">`,
-        iconSize: [40, 40],
-        iconAnchor: [20, 20]
-    });
-
-    const marker = L.marker(place.coords, { icon: icon });
-    soundMarkers.push({ marker, sound: place.name });
-
-    marker.on('click', () => handleSoundClick(place.name));
-
-    const symbolCount = place.name.length;
-    const width = `${symbolCount * 8}px`;
-
-    const label = L.divIcon({
-        className: 'sound-label',
-        html: `<span class="label-text">${place.name}</span>`,
-        iconAnchor: [-20, 10]
-    });
-    const labelMarker = L.marker([place.coords[0], place.coords[1]], { icon: label });
-    labelMarker.addTo(map);
-    labelMarker.getElement().style.display = 'none';
-
-    place._labelMarker = labelMarker;
-});
-
-function updateLabelsVisibility() {
-    const zoom = map.getZoom();
-    soundPlaces.forEach(place => {
-        const labelMarker = place._labelMarker;
-        if (!labelMarker) return;
-        const el = labelMarker.getElement();
-        if (!el) return;
-
-        if (currentMode === 'sounds' && zoom >= 10) {
-            el.style.display = 'block';
-        } else {
-            el.style.display = 'none';
-        }
-    });
-}
-
-map.on('zoomend', () => {
-    updateLabelsVisibility();
-});
+                layer.on({
+                    mouseover: e => { e.target.setStyle({ weight: 3, fillOpacity: 0.3 }); e.target.bringToFront(); },
+                    mouseout: e => { e.target.setStyle(getRegionStyle(e.target.feature)); },
+                    click: () => {
+                        if (currentMode === "music") {
+                            if (playlistData) openMusicPlayer(playlistData.name_uk, playlistData.playlist);
+                            else alert(`Немає плейлисту для області: ${regionName}`);
+                        } else openSoundList(regionName);
+                    }
+                });
+            }
+        }).addTo(map);
+    })
+    .catch(err => console.error('Помилка завантаження GeoJSON:', err));
 
 function setActive(button, mode) {
-    [btnSounds, btnMusic, btnGuides].forEach(b => b.classList.remove("active"));
+    [btnSounds, btnMusic].forEach(b => b.classList.remove("active"));
     button.classList.add("active");
     currentMode = mode;
     updateButtonsMode();
-    updateMarkersVisibility();
-
-    updateLabelsVisibility();
 }
-
-/*soundPlaces.forEach(place => {
-    const button = L.divIcon({
-        className: 'sound-icon',
-        html: `<button class="sound-button" data-sound="${place.name}">${place.name}</button>`,
-        iconSize: [100, 30],
-        iconAnchor: [50, 15]
-    });
-    const marker = L.marker(place.coords, { icon: button });
-    soundMarkers.push({ marker, sound: place.name });
-    marker.on('click', () => handleSoundClick(place.name));
-});*/
-
-function updateMarkersVisibility() {
-    if (currentMode === 'music') {
-        cityMarkers.forEach(item => {
-            if (!map.hasLayer(item.marker)) item.marker.addTo(map);
-        });
-        soundMarkers.forEach(item => {
-            if (map.hasLayer(item.marker)) map.removeLayer(item.marker);
-        });
-    } else if (currentMode === 'sounds') {
-        soundMarkers.forEach(item => {
-            if (!map.hasLayer(item.marker)) item.marker.addTo(map);
-        });
-        cityMarkers.forEach(item => {
-            if (map.hasLayer(item.marker)) map.removeLayer(item.marker);
-        });
-    }
-}
-
-btnSounds.addEventListener("click", () => setActive(btnSounds, "sounds"));
-btnMusic.addEventListener("click", () => setActive(btnMusic, "music"));
-btnGuides.addEventListener("click", () => setActive(btnGuides, "guides"));
-
-setActive(btnMusic, "music");
 
 function updateButtonsMode() {
     document.querySelectorAll('.city-button, .sound-button').forEach(btn => {
-        btn.classList.remove('music-mode', 'sounds-mode', 'guides-mode');
+        btn.classList.remove('music-mode', 'sounds-mode');
         btn.classList.add(`${currentMode}-mode`);
     });
+
+    const mapContainer = document.getElementById('map');
+    mapContainer.classList.remove('music-mode', 'sounds-mode');
+    mapContainer.classList.add(`${currentMode}-mode`);
+
+    if (geojsonLayer) geojsonLayer.eachLayer(layer => layer.setStyle(getRegionStyle(layer.feature)));
 }
 
-function handleCityClick(cityName) {
-    if (currentMode === "music") openMusicPlayer(cityName);
-    else if (currentMode === "sounds") openSoundPlayer(cityName);
-}
-function handleSoundClick(soundName) {
-    if (currentMode === "sounds") openSoundPlayer(soundName);
+function getRegionStyle(feature) {
+    return { color: currentMode === "music" ? '#1E90FF' : '#2d9e2d', weight: 2, fillOpacity: 0.1 };
 }
 
-function openMusicPlayer(cityName) {
-    const existing = document.querySelector('.spotify-window');
-    if (existing) existing.remove();
+function normalizeRegion(name) {
+    if (!name) return '';
+    return name.toLowerCase().replace(/\s+/g, '').replace('oblast','').trim();
+}
 
-    const playlistURL = playlists[cityName];
-    if (!playlistURL) {
-        alert(`Для міста "${cityName}" ще немає плейлиста`);
-        return;
+function parseCSVLine(line) {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+
+        if (char === '"') {
+            inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+            result.push(current.trim());
+            current = '';
+        } else {
+            current += char;
+        }
     }
+    result.push(current.trim());
+
+    return result;
+}
+
+async function loadSoundsCSV() {
+    const res = await fetch('data/sounds.csv');
+    const text = await res.text();
+    const rows = text.split('\n').map(r => r.trim()).filter(r => r);
+
+    rows.forEach(row => {
+        const cols = parseCSVLine(row);
+        const [title, description, city, category, image, audio, region] = cols;
+
+        sounds[title] = { title, description, city, category, image, audio, region };
+
+        if (category && !allCategories.includes(category)) {
+            allCategories.push(category);
+        }
+    });
+
+    console.log('Завантажено звуків:', Object.keys(sounds).length);
+    console.log('Всі категорії:', allCategories);
+}
+loadSoundsCSV();
+
+function openSoundList(regionFilter = null) {
+    const existingList = document.querySelector('.audio-window.sound-list');
+    if (existingList) existingList.remove();
 
     const playerWindow = document.createElement('div');
-    playerWindow.classList.add('spotify-window');
+    playerWindow.classList.add('audio-window', 'sound-list');
+
+    const filteredSounds = Object.values(sounds).filter(s =>
+        !regionFilter || normalizeRegion(s.region) === normalizeRegion(regionFilter)
+    );
+
+    const categoriesSet = new Set(filteredSounds.map(s => s.category));
+    const categories = Array.from(categoriesSet);
+
+    let categoriesHTML = `<div class="audio-categories"><button class="category-btn active" data-category="all">Всі</button>`;
+    categories.forEach(cat => categoriesHTML += `<button class="category-btn" data-category="${cat}">${cat}</button>`);
+    categoriesHTML += `</div>`;
+
+    const audioListHTML = `<div class="audio-list vertical-scroll">` +
+        filteredSounds.map(s => `<div class="audio-item" data-sound="${s.title}"><span class="audio-item-title">${s.title}</span></div>`).join('') +
+        `</div>`;
+
     playerWindow.innerHTML = `
-        <div class="spotify-header music-header">
-            <span class="spotify-title">${cityName} - Музика</span>
-            <button class="spotify-close">✖</button>
+        <div class="audio-header">
+            <span class="audio-title-header">${regionFilter ? regionFilter : 'Звуки'}</span>
+            <button class="audio-close">✖</button>
         </div>
-        <iframe
-            src="${playlistURL}"
-            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-            loading="lazy">
-        </iframe>
-        <div class="spotify-resizer"></div>
+        <div class="audio-body">
+            ${categoriesHTML}
+            ${audioListHTML}
+        </div>
+        <div class="audio-resizer"></div>
     `;
+
     document.body.appendChild(playerWindow);
 
-    playerWindow.querySelector('.spotify-close').onclick = () => playerWindow.remove();
+    const scrollContainer = playerWindow.querySelector('.vertical-scroll');
+    scrollContainer.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        scrollContainer.scrollTop += e.deltaY;
+    });
+    playerWindow.querySelector('.audio-close').onclick = () => playerWindow.remove();
 
-    makeDraggableSpotify(playerWindow);
+    playerWindow.querySelectorAll('.category-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            playerWindow.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const cat = btn.dataset.category;
+            const listContainer = playerWindow.querySelector('.audio-list');
+            listContainer.innerHTML = '';
+
+            filteredSounds.forEach(s => {
+                if (cat === 'all' || s.category === cat) {
+                    const item = document.createElement('div');
+                    item.classList.add('audio-item');
+                    item.dataset.sound = s.title;
+                    item.innerHTML = `<span class="audio-item-title">${s.title}</span>`;
+                    listContainer.appendChild(item);
+
+                    item.addEventListener('click', () => openSoundPlayer(s.title));
+                }
+            });
+        });
+    });
+
+    playerWindow.querySelectorAll('.audio-item').forEach(item => {
+        const soundName = item.dataset.sound;
+        item.addEventListener('click', () => openSoundPlayer(soundName));
+    });
+
+    makeDraggableList(playerWindow);
+    makeResizableList(playerWindow);
 }
 function openSoundPlayer(soundName) {
-    const existing = document.querySelector('.audio-window');
+    const existing = document.querySelector('.audio-sound-window');
     if (existing) existing.remove();
 
     const soundData = sounds[soundName];
@@ -517,38 +361,38 @@ function openSoundPlayer(soundName) {
     }
 
     const playerWindow = document.createElement('div');
-    playerWindow.classList.add('audio-window');
+    playerWindow.classList.add('audio-sound-window');
     playerWindow.innerHTML = `
-        <div class="audio-header">
-            <span class="audio-title-header">${soundName}</span>
-            <button class="audio-close">✖</button>
+        <div class="audio-sound-header">
+            <span class="audio-sound-title-header">${soundName}</span>
+            <button class="audio-sound-close">✖</button>
         </div>
-        <div class="audio-body">
-            <img src="${soundData.image}" alt="${soundData.title}" class="audio-image">
-            <p class="audio-name">${soundData.title}</p>
-            <p class="audio-description">${soundData.description}</p>
-            <audio id="audio-player" src="${soundData.audio}"></audio>
-            <div class="audio-controls">
-                <button class="audio-play-btn" id="audio-play-btn">▶</button>
-                <div class="audio-progress-container">
-                    <div class="audio-progress-bar" id="audio-progress-bar"></div>
+        <div class="audio-sound-body">
+            <img src="${soundData.image}" alt="${soundData.title}" class="audio-sound-image">
+            <p class="audio-sound-name">${soundData.title}</p>
+            <p class="audio-sound-description">${soundData.description}</p>
+            <audio id="audio-sound-player" src="${soundData.audio}"></audio>
+            <div class="audio-sound-controls">
+                <button class="audio-sound-play-btn" id="audio-sound-play-btn">▶</button>
+                <div class="audio-sound-progress-container">
+                    <div class="audio-sound-progress-bar" id="audio-sound-progress-bar"></div>
                 </div>
-                <span class="audio-time">
-                    <span id="audio-current-time">0:00</span> / <span id="audio-duration">0:00</span>
+                <span class="audio-sound-time">
+                    <span id="audio-sound-current-time">0:00</span> / <span id="audio-sound-duration">0:00</span>
                 </span>
             </div>
         </div>
-        <div class="audio-resizer"></div>
+        <div class="audio-sound-resizer"></div>
     `;
 
     document.body.appendChild(playerWindow);
 
-    const audio = playerWindow.querySelector('#audio-player');
-    const playBtn = playerWindow.querySelector('#audio-play-btn');
-    const progressBar = playerWindow.querySelector('#audio-progress-bar');
-    const progressContainer = playerWindow.querySelector('.audio-progress-container');
-    const currentTimeEl = playerWindow.querySelector('#audio-current-time');
-    const durationEl = playerWindow.querySelector('#audio-duration');
+    const audio = playerWindow.querySelector('#audio-sound-player');
+    const playBtn = playerWindow.querySelector('#audio-sound-play-btn');
+    const progressBar = playerWindow.querySelector('#audio-sound-progress-bar');
+    const progressContainer = playerWindow.querySelector('.audio-sound-progress-container');
+    const currentTimeEl = playerWindow.querySelector('#audio-sound-current-time');
+    const durationEl = playerWindow.querySelector('#audio-sound-duration');
 
     audio.addEventListener('loadedmetadata', () => {
         durationEl.textContent = formatTime(audio.duration);
@@ -576,7 +420,7 @@ function openSoundPlayer(soundName) {
         audio.currentTime = percent * audio.duration;
     });
 
-    playerWindow.querySelector('.audio-close').onclick = () => {
+    playerWindow.querySelector('.audio-sound-close').onclick = () => {
         audio.pause();
         playerWindow.remove();
     };
@@ -585,14 +429,99 @@ function openSoundPlayer(soundName) {
     makeResizableAudio(playerWindow);
 }
 
+function openMusicPlayer(cityName, playlistURL) {
+    const existing = document.querySelector('.spotify-window');
+    if (existing) existing.remove();
+
+    if (!playlistURL) {
+        alert(`Для "${cityName}" ще немає плейлиста`);
+        return;
+    }
+
+    const playerWindow = document.createElement('div');
+    playerWindow.classList.add('spotify-window');
+    playerWindow.innerHTML = `
+        <div class="spotify-header music-header">
+            <span class="spotify-title">${cityName} - Музика</span>
+            <button class="spotify-close">✖</button>
+        </div>
+        <iframe
+            src="${playlistURL}"
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+            loading="lazy">
+        </iframe>
+    `;
+    document.body.appendChild(playerWindow);
+
+    playerWindow.querySelector('.spotify-close').onclick = () => playerWindow.remove();
+
+    makeDraggableSpotify(playerWindow);
+}
+
 function formatTime(seconds) {
     if (isNaN(seconds)) return '0:00';
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
-function makeDraggableAudio(element) {
+function makeDraggableList(element) {
     const header = element.querySelector('.audio-header');
+    if (!header) return;
+
+    let offsetX = 0, offsetY = 0, isDragging = false;
+
+    header.addEventListener('mousedown', (e) => {
+        isDragging = true;
+        offsetX = e.clientX - element.offsetLeft;
+        offsetY = e.clientY - element.offsetTop;
+        header.style.cursor = 'grabbing';
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isDragging) return;
+        element.style.left = `${e.clientX - offsetX}px`;
+        element.style.top = `${e.clientY - offsetY}px`;
+    });
+
+    document.addEventListener('mouseup', () => {
+        isDragging = false;
+        header.style.cursor = 'grab';
+    });
+}
+function makeResizableList(element) {
+    const resizer = element.querySelector('.audio-resizer');
+    if (!resizer) return;
+
+    let isResizing = false;
+    let startX, startY, startWidth, startHeight;
+
+    resizer.addEventListener('mousedown', (e) => {
+        isResizing = true;
+        startX = e.clientX;
+        startY = e.clientY;
+        startWidth = element.offsetWidth;
+        startHeight = element.offsetHeight;
+        document.body.style.userSelect = 'none';
+    });
+
+    document.addEventListener('mousemove', (e) => {
+        if (!isResizing) return;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+
+        element.style.width = `${startWidth + dx}px`;
+        element.style.height = `${startHeight + dy}px`;
+    });
+
+    document.addEventListener('mouseup', () => {
+        isResizing = false;
+        document.body.style.userSelect = '';
+    });
+}
+function makeDraggableAudio(element) {
+    const header = element.querySelector('.audio-sound-header');
+    if (!header) return;
+
     let offsetX = 0, offsetY = 0, isDragging = false;
 
     header.addEventListener('mousedown', (e) => {
@@ -614,20 +543,28 @@ function makeDraggableAudio(element) {
     });
 }
 function makeResizableAudio(element) {
-    const resizer = element.querySelector('.audio-resizer');
-    let isResizing = false, startY = 0, startHeight = 0;
+    const resizer = element.querySelector('.audio-sound-resizer');
+    if (!resizer) return;
+
+    let isResizing = false;
+    let startX, startY, startWidth, startHeight;
 
     resizer.addEventListener('mousedown', (e) => {
         isResizing = true;
+        startX = e.clientX;
         startY = e.clientY;
-        startHeight = parseInt(getComputedStyle(element).height, 10);
+        startWidth = element.offsetWidth;
+        startHeight = element.offsetHeight;
         document.body.style.userSelect = 'none';
     });
 
     document.addEventListener('mousemove', (e) => {
         if (!isResizing) return;
-        const newHeight = startHeight + (e.clientY - startY);
-        element.style.height = `${Math.max(300, newHeight)}px`;
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+
+        element.style.width = `${startWidth + dx}px`;
+        element.style.height = `${startHeight + dy}px`;
     });
 
     document.addEventListener('mouseup', () => {
