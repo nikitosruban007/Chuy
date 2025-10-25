@@ -99,9 +99,7 @@
     background-color: #113593;
 }
 
-.city-button.sounds-mode {
-
-}
+.city-button.sounds-mode {}
 
 .hidden {
     display: none !important;
@@ -337,7 +335,6 @@
     pointer-events: none;
 }
 
-/* Напівпрозорий фон */
 .auth-overlay {
     position: absolute;
     inset: 0;
@@ -346,7 +343,6 @@
     z-index: 1;
 }
 
-/* Основне вікно авторизації */
 .auth-box {
     z-index: 2;
     background: #fbf9f8;
@@ -358,7 +354,6 @@
     transition: all 0.25s;
 }
 
-/* Вкладки (логін / реєстрація) */
 .auth-tabs {
     display: flex;
     justify-content: center;
@@ -383,7 +378,6 @@
     box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
 }
 
-/* Поля вводу */
 .field {
     display: block;
     margin-bottom: 12px;
@@ -403,7 +397,6 @@
     border-color: #3b79f8;
 }
 
-/* Основна кнопка */
 .primary-btn {
     width: 100%;
     padding: 12px;
@@ -423,7 +416,6 @@
     box-shadow: 0 8px 24px rgba(59, 121, 248, 0.25);
 }
 
-/* Розділювач */
 .or-sep {
     text-align: center;
     margin: 12px 0;
@@ -431,7 +423,6 @@
     font-size: 14px;
 }
 
-/* Соціальні кнопки */
 .social-row {
     display: flex;
     justify-content: space-between;
@@ -467,10 +458,6 @@
     color: #1a4fbf;
 }
 
-/* ============================
-   ПРОФІЛЬ — випадаюче меню
-   ============================ */
-
 .profile-dropdown {
     position: absolute;
     top: 64px;
@@ -490,7 +477,6 @@
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
 }
 
-/* Верхня частина профілю */
 .profile-top {
     display: flex;
     align-items: center;
@@ -505,7 +491,6 @@
     object-fit: cover;
 }
 
-/* Кнопки дій профілю */
 .link-btn,
 .danger-btn {
     width: 100%;
@@ -517,7 +502,6 @@
     transition: background 0.2s, box-shadow 0.2s;
 }
 
-/* Звичайна кнопка */
 .link-btn {
     background: #f3f7ff;
     border: 1px solid #e6eeff;
@@ -527,7 +511,6 @@
     background: #e8f0ff;
 }
 
-/* Небезпечна дія (вихід тощо) */
 .danger-btn {
     background: #fff5f5;
     border: 1px solid #ffd7d7;
@@ -536,4 +519,11 @@
 
 .danger-btn:hover {
     background: #ffeaea;
+}
+
+.spotify-window iframe {
+    flex: 1;
+    border: none;
+    width: 100%;
+    height: 100%;
 }
