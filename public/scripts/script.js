@@ -137,10 +137,17 @@ async function refreshProfile() {
 refreshProfile()
 
 //    =========================================================================================================
+
 let currentMode = "music";
 let geojsonLayer;
 let sounds = {};
 let allCategories = [];
+let playbackCircle = null;
+let currentlyPlaying = false;
+let lastClickedRegion = null;
+let playbackTimeoutId = null;
+
+
 const playlists = [
     { name_en: "Lviv Oblast", name_uk: "Львівська область", playlist: "https://open.spotify.com/embed/playlist/37i9dQZF1DX7gIoKXt0gmx?utm_source=generator" },
     { name_en: "Volyn Oblast", name_uk: "Волинська область", playlist: "https://open.spotify.com/embed/playlist/61OTpxcxvKcncbWYfxJG0h?utm_source=generator" },
@@ -150,7 +157,7 @@ const playlists = [
     { name_en: "Kharkiv Oblast", name_uk: "Харківська область", playlist: "https://open.spotify.com/embed/playlist/2pOx55wWxI1vsLitqtpp60?utm_source=generator" },
     { name_en: "Luhansk Oblast", name_uk: "Луганська область", playlist: "https://open.spotify.com/embed/playlist/1pBcu7pquxneAFxcsmb671?utm_source=generator" },
     { name_en: "Donetsk Oblast", name_uk: "Донецька область", playlist: "https://open.spotify.com/embed/playlist/7sl24S6mRCO09MTXUmu2k3?utm_source=generator" },
-    { name_en: "Zaporizhzhia Oblast", name_uk: "Запорізька область", playlist: "https://open.spotify.com/embed/playlist/12ncb1YwgH2QGDr4id09lL?utm_source=generator" },
+    { name_en: "Zaporizhia Oblast", name_uk: "Запорізька область", playlist: "https://open.spotify.com/embed/playlist/12ncb1YwgH2QGDr4id09lL?utm_source=generator" },
     { name_en: "Crimea", name_uk: "Крим", playlist: "https://open.spotify.com/embed/playlist/2Fy4rQtZt3M67paPLnBGDy?utm_source=generator" },
     { name_en: "Kyiv Oblast", name_uk: "Київська область", playlist: "https://open.spotify.com/embed/playlist/5n8q1jMUZvukluXGrK59ud?utm_source=generator" },
     { name_en: "Zhytomyr Oblast", name_uk: "Житомирська область", playlist: "https://open.spotify.com/embed/playlist/6wY5dYvNyaZ6KDjYFxGjnA?utm_source=generator" },
@@ -160,7 +167,7 @@ const playlists = [
     { name_en: "Kherson Oblast", name_uk: "Херсонська область", playlist: "https://open.spotify.com/embed/playlist/2ByILCBJFvztz6715TMT4E?utm_source=generator" },
     { name_en: "Dnipropetrovsk Oblast", name_uk: "Дніпропетровська область", playlist: "https://open.spotify.com/embed/playlist/6emNP4N4ikf3cfDhS8Q4hf?utm_source=generator" },
     { name_en: "Kirovohrad Oblast", name_uk: "Кіровоградська область", playlist: "https://open.spotify.com/embed/playlist/6hzjgiEvJjXi2Hnr3CocEm?utm_source=generator" },
-    { name_en: "Odesa Oblast", name_uk: "Одеська область", playlist: "https://open.spotify.com/embed/playlist/2pVF5RrQw1DVwGIgPcMrXD?utm_source=generator" },
+    { name_en: "Odessa Oblast", name_uk: "Одеська область", playlist: "https://open.spotify.com/embed/playlist/2pVF5RrQw1DVwGIgPcMrXD?utm_source=generator" },
     { name_en: "Mykolaiv Oblast", name_uk: "Миколаївська область", playlist: "https://open.spotify.com/embed/playlist/1FW6Fgxn3DXUOGfIIs834v?utm_source=generator" },
     { name_en: "Chernihiv Oblast", name_uk: "Чернігівська область", playlist: "https://open.spotify.com/embed/playlist/63MRfNIjbDorHgfyPUqntF?utm_source=generator" },
     { name_en: "Sumy Oblast", name_uk: "Сумська область", playlist: "https://open.spotify.com/embed/playlist/1754eV67gtIpKfmaubVDLj?utm_source=generator" },
@@ -193,7 +200,11 @@ fetch('data/Ukraine.geojson')
                 layer.on({
                     mouseover: e => { e.target.setStyle({ weight: 3, fillOpacity: 0.3 }); e.target.bringToFront(); },
                     mouseout: e => { e.target.setStyle(getRegionStyle(e.target.feature)); },
-                    click: () => {
+                    click: (e) => {
+                        const bounds = e.target.getBounds();
+                        const center = bounds.getCenter();
+                        lastClickedRegion = { lat: center.lat, lng: center.lng, name: regionName };
+
                         if (currentMode === "music") {
                             if (playlistData) openMusicPlayer(playlistData.name_uk, playlistData.playlist);
                             else alert(`Немає плейлисту для області: ${regionName}`);
@@ -223,6 +234,13 @@ function updateButtonsMode() {
     mapContainer.classList.add(`${currentMode}-mode`);
 
     if (geojsonLayer) geojsonLayer.eachLayer(layer => layer.setStyle(getRegionStyle(layer.feature)));
+
+    // --- Оновлення title у <head> ---
+    if (currentMode === "music") {
+        document.title = "Мапа музики України";
+    } else if (currentMode === "sounds") {
+        document.title = "Мапа звуків України";
+    }
 }
 
 function getRegionStyle(feature) {
@@ -279,7 +297,10 @@ loadSoundsCSV();
 
 function openSoundList(regionFilter = null) {
     const existingList = document.querySelector('.audio-window.sound-list');
+    const existing = document.querySelector('.audio-sound-window');
+    if (existing) existing.remove();
     if (existingList) existingList.remove();
+    stopPlaybackAnimation();
 
     const playerWindow = document.createElement('div');
     playerWindow.classList.add('audio-window', 'sound-list');
@@ -350,6 +371,7 @@ function openSoundList(regionFilter = null) {
     makeDraggableList(playerWindow);
     makeResizableList(playerWindow);
 }
+
 function openSoundPlayer(soundName) {
     const existing = document.querySelector('.audio-sound-window');
     if (existing) existing.remove();
@@ -402,9 +424,11 @@ function openSoundPlayer(soundName) {
         if (audio.paused) {
             audio.play();
             playBtn.textContent = '⏸';
+            startPlaybackAnimation();
         } else {
             audio.pause();
             playBtn.textContent = '▶';
+            stopPlaybackAnimation();
         }
     });
 
@@ -422,16 +446,19 @@ function openSoundPlayer(soundName) {
 
     playerWindow.querySelector('.audio-sound-close').onclick = () => {
         audio.pause();
+        stopPlaybackAnimation();
         playerWindow.remove();
     };
 
+    startPlaybackAnimation();
     makeDraggableAudio(playerWindow);
     makeResizableAudio(playerWindow);
 }
-
 function openMusicPlayer(cityName, playlistURL) {
     const existing = document.querySelector('.spotify-window');
+
     if (existing) existing.remove();
+    stopPlaybackAnimation();
 
     if (!playlistURL) {
         alert(`Для "${cityName}" ще немає плейлиста`);
@@ -453,8 +480,12 @@ function openMusicPlayer(cityName, playlistURL) {
     `;
     document.body.appendChild(playerWindow);
 
-    playerWindow.querySelector('.spotify-close').onclick = () => playerWindow.remove();
+    playerWindow.querySelector('.spotify-close').onclick = () => {
+        stopPlaybackAnimation();
+        playerWindow.remove();
+    };
 
+    startPlaybackAnimation();
     makeDraggableSpotify(playerWindow);
 }
 
@@ -464,6 +495,7 @@ function formatTime(seconds) {
     const secs = Math.floor(seconds % 60);
     return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
+
 function makeDraggableList(element) {
     const header = element.querySelector('.audio-header');
     if (!header) return;
@@ -593,4 +625,82 @@ function makeDraggableSpotify(element) {
         isDragging = false;
         header.style.cursor = 'grab';
     });
+}
+
+function startPlaybackAnimation() {
+    if (!lastClickedRegion) return;
+
+    stopPlaybackAnimation();
+    currentlyPlaying = true;
+
+    const startRadius = 5000;
+    const endRadius = 100000;
+    const duration = 2000;
+    const waveDelay = 700;
+
+    const colorSettings = {
+        music: { startColor: { r: 0, g: 145, b: 255 }, endColor: { r: 183, g: 214, b: 250 } },
+        sounds: { startColor: { r: 75, g: 255, b: 45 }, endColor: { r: 181, g: 255, b: 171 } }
+    };
+    const modeSettings = colorSettings[currentMode] || colorSettings.sounds;
+
+    function createWave() {
+        if (!currentlyPlaying) return;
+
+        const circle = L.circle([lastClickedRegion.lat, lastClickedRegion.lng], {
+            radius: startRadius,
+            color: `rgb(${modeSettings.startColor.r}, ${modeSettings.startColor.g}, ${modeSettings.startColor.b})`,
+            fillColor: `rgb(${modeSettings.startColor.r}, ${modeSettings.startColor.g}, ${modeSettings.startColor.b})`,
+            fillOpacity: 0.3,
+            weight: 2
+        }).addTo(map);
+
+        const startTime = Date.now();
+
+        function animate() {
+            if (!currentlyPlaying) {
+                map.removeLayer(circle);
+                return;
+            }
+
+            const elapsed = Date.now() - startTime;
+            const progress = elapsed / duration;
+
+            if (progress >= 1) {
+                map.removeLayer(circle);
+                return;
+            }
+
+            const eased = progress < 0.5 ? 2 * progress * progress : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+            const radius = startRadius + (endRadius - startRadius) * eased;
+            const r = Math.round(modeSettings.startColor.r + (modeSettings.endColor.r - modeSettings.startColor.r) * eased);
+            const g = Math.round(modeSettings.startColor.g + (modeSettings.endColor.g - modeSettings.startColor.g) * eased);
+            const b = Math.round(modeSettings.startColor.b + (modeSettings.endColor.b - modeSettings.startColor.b) * eased);
+            const color = `rgb(${r}, ${g}, ${b})`;
+
+            circle.setRadius(radius);
+            circle.setStyle({ color, fillColor: color, fillOpacity: 0.3 - eased * 0.3 });
+
+            requestAnimationFrame(animate);
+        }
+
+        requestAnimationFrame(animate);
+
+        // Наступне коло стартує через waveDelay, але тільки якщо анімація не зупинена
+        if (currentlyPlaying) playbackTimeoutId = setTimeout(createWave, waveDelay);
+    }
+
+    createWave();
+}
+function stopPlaybackAnimation() {
+    currentlyPlaying = false;
+    if (playbackTimeoutId) {
+        clearTimeout(playbackTimeoutId);
+        playbackTimeoutId = null;
+    }
+    if (playbackCircle) {
+        playbackCircle.forEach(circle => map.removeLayer(circle));
+        playbackCircle = [];
+    }
 }
