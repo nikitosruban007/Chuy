@@ -136,8 +136,6 @@ async function refreshProfile() {
 
 refreshProfile()
 
-//    =========================================================================================================
-
 let currentMode = "music";
 let geojsonLayer;
 let sounds = {};
@@ -235,7 +233,6 @@ function updateButtonsMode() {
 
     if (geojsonLayer) geojsonLayer.eachLayer(layer => layer.setStyle(getRegionStyle(layer.feature)));
 
-    // --- Оновлення title у <head> ---
     if (currentMode === "music") {
         document.title = "Мапа музики України";
     } else if (currentMode === "sounds") {
@@ -687,7 +684,6 @@ function startPlaybackAnimation() {
 
         requestAnimationFrame(animate);
 
-        // Наступне коло стартує через waveDelay, але тільки якщо анімація не зупинена
         if (currentlyPlaying) playbackTimeoutId = setTimeout(createWave, waveDelay);
     }
 
